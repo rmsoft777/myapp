@@ -1,0 +1,135 @@
+-- ===========================
+-- 1. USERS
+-- ===========================
+CREATE TABLE users (
+  user_id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  role VARCHAR(20) CHECK (role IN ('admin', 'staff', 'customer')) NOT NULL,
+  phone VARCHAR(20),
+  address TEXT, -- single full address field for the user
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ===========================
+-- 2. MENU CATEGORY
+-- ===========================
+CREATE TABLE menu_category (
+  category_id SERIAL PRIMARY KEY,
+  category_name VARCHAR(20) CHECK (category_name IN ('Veg','Non-Veg')) NOT NULL,
+  description TEXT
+);
+
+-- ===========================
+-- 3. MENU ITEMS
+-- ===========================
+CREATE TABLE menu_items (
+  item_id SERIAL PRIMARY KEY,
+  category_id INT REFERENCES menu_category(category_id) ON DELETE SET NULL,
+  item_name VARCHAR(100) NOT NULL,
+  description TEXT,
+  price DECIMAL(10,2) NOT NULL,
+  is_available BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ===========================
+-- 4. ADMIN DESIGNED PLATES
+-- ===========================
+CREATE TABLE admin_designed_plates (
+  plate_id SERIAL PRIMARY KEY,
+  plate_name VARCHAR(100) NOT NULL,
+  description TEXT,
+  total_price DECIMAL(10,2),
+  category VARCHAR(20) CHECK (category IN ('Veg','Non-Veg','Mixed')),
+  created_by INT REFERENCES users(user_id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ===========================
+-- 5. PLATE ITEMS (links admin plates → menu items)
+-- ===========================
+CREATE TABLE plate_items (
+  plate_item_id SERIAL PRIMARY KEY,
+  plate_id INT REFERENCES admin_designed_plates(plate_id) ON DELETE CASCADE,
+  item_id INT REFERENCES menu_items(item_id) ON DELETE CASCADE,
+  quantity INT DEFAULT 1
+);
+
+-- ===========================
+-- 6. ORDERS (each order has its own address)
+-- ===========================
+CREATE TABLE orders (
+  order_id SERIAL PRIMARY KEY,
+  customer_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+  plate_id INT REFERENCES admin_designed_plates(plate_id) ON DELETE SET NULL,
+  -- address for this specific order (snapshot)
+  address TEXT NOT NULL,
+  event_date DATE NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending'
+      CHECK (status IN ('pending','accepted','in_progress','completed','cancelled')),
+  assigned_staff_id INT REFERENCES users(user_id) ON DELETE SET NULL,
+  total_amount DECIMAL(10,2),
+  created_at TIMESTAMP DEFAULT NOW(),
+  accepted_at TIMESTAMP,
+  completed_at TIMESTAMP
+);
+
+-- ===========================
+-- 7. ORDER ITEMS (customized dishes for each order)
+-- ===========================
+CREATE TABLE order_items (
+  order_item_id SERIAL PRIMARY KEY,
+  order_id INT REFERENCES orders(order_id) ON DELETE CASCADE,
+  item_id INT REFERENCES menu_items(item_id) ON DELETE SET NULL,
+  item_name_snapshot VARCHAR(100),
+  item_price_snapshot DECIMAL(10,2),
+  quantity INT DEFAULT 1,
+  subtotal DECIMAL(10,2)
+);
+
+-- ===========================
+-- 8. PAYMENTS (manual entry by admin)
+-- ===========================
+CREATE TABLE payments (
+  payment_id SERIAL PRIMARY KEY,
+  order_id INT REFERENCES orders(order_id) ON DELETE CASCADE,
+  paid_amount DECIMAL(10,2) NOT NULL,
+  payment_status VARCHAR(20) CHECK (payment_status IN ('partial','full')) NOT NULL,
+  payment_date TIMESTAMP DEFAULT NOW(),
+  entered_by INT REFERENCES users(user_id) ON DELETE SET NULL,
+  remaining_balance DECIMAL(10,2) DEFAULT 0
+);
+
+-- ===========================
+-- 9. ORDER UPDATES (logs for staff/admin)
+-- ===========================
+CREATE TABLE order_updates (
+  update_id SERIAL PRIMARY KEY,
+  order_id INT REFERENCES orders(order_id) ON DELETE CASCADE,
+  updated_by INT REFERENCES users(user_id) ON DELETE SET NULL,
+  message TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ===========================
+-- 10. NOTIFICATIONS
+-- ===========================
+CREATE TABLE notifications (
+  notification_id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ===========================
+-- 11. OPTIONAL INDEXES
+-- ===========================
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_payments_order ON payments(order_id);
+CREATE INDEX idx_notifications_user ON notifications(user_id);
