@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreateMenuScreen extends StatefulWidget {
@@ -16,17 +17,25 @@ class _CreateMenuScreenState extends State<CreateMenuScreen> {
   int? _categoryId;
   bool _isAvailable = true;
   bool _isLoading = false;
-  late final Future<List<Map<String, dynamic>>> _categoriesFuture;
+  late Future<List<Map<String, dynamic>>> _categoriesFuture;
+  late Future<List<Map<String, dynamic>>> _menuItemsFuture;
 
   @override
   void initState() {
     super.initState();
     _categoriesFuture = _fetchCategories();
+    _menuItemsFuture = _fetchMenuItems();
   }
 
   Future<List<Map<String, dynamic>>> _fetchCategories() async {
     final supabase = Supabase.instance.client;
     final response = await supabase.from('menu_category').select();
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchMenuItems() async {
+    final supabase = Supabase.instance.client;
+    final response = await supabase.from('menu_items').select('*, menu_category(category_name)');
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -60,6 +69,7 @@ class _CreateMenuScreenState extends State<CreateMenuScreen> {
           _descriptionController.clear();
           _categoryId = null;
           _isAvailable = true;
+          _menuItemsFuture = _fetchMenuItems(); // Refresh the list
         });
       }
     } catch (error) {
@@ -79,12 +89,27 @@ class _CreateMenuScreenState extends State<CreateMenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: ListView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCreateMenuItemForm(),
+          const SizedBox(height: 30),
+          _buildExistingMenuItemsList(),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCreateMenuItemForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('Add New Menu Item', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _itemNameController,
               decoration: const InputDecoration(labelText: 'Item Name'),
@@ -162,10 +187,63 @@ class _CreateMenuScreenState extends State<CreateMenuScreen> {
                 : ElevatedButton(
                     onPressed: _createMenuItem,
                     child: const Text('Create Item'),
+                    style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
                   ),
-          ],
-        ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildExistingMenuItemsList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Existing Menu Items', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        FutureBuilder<List<Map<String, dynamic>>>(
+          future: _menuItemsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error loading menu items: ${snapshot.error}'));
+            }
+            final items = snapshot.data ?? [];
+            if (items.isEmpty) {
+              return const Center(child: Text('No menu items found.'));
+            }
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                return Card(
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: ListTile(
+                    title: Text(item['item_name'] ?? 'N/A', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Category: ${item['menu_category']?['category_name'] ?? 'N/A'}'),
+                        Text(item['description'] ?? ''),
+                      ],
+                    ),
+                    trailing: Text(
+                      '₹${item['price']?.toStringAsFixed(2) ?? '0.00'}',
+                       style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green[700]),
+                    ),
+                    isThreeLine: true,
+                  ),
+                );
+              },
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+            );
+          },
+        ),
+      ],
     );
   }
 }
