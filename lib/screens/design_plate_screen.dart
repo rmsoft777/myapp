@@ -15,7 +15,7 @@ class _DesignPlateScreenState extends State<DesignPlateScreen> {
   final _descriptionController = TextEditingController();
   String? _plateCategory;
   List<Map<String, dynamic>> _availableItems = [];
-  List<Map<String, dynamic>> _selectedItems = [];
+  final List<Map<String, dynamic>> _selectedItems = [];
   double _totalPrice = 0.0;
   String _searchTerm = '';
   bool _isLoading = false;
@@ -151,7 +151,7 @@ class _DesignPlateScreenState extends State<DesignPlateScreen> {
                 decoration: const InputDecoration(labelText: 'Description'),
             ),
             DropdownButtonFormField<String>(
-                value: _plateCategory,
+                initialValue: _plateCategory,
                 hint: const Text('Select Category'),
                 items: ['Veg', 'Non-Veg', 'Mixed'].map((String category) {
                     return DropdownMenuItem<String>(value: category, child: Text(category));
@@ -179,7 +179,7 @@ class _DesignPlateScreenState extends State<DesignPlateScreen> {
                             final item = items[index];
                             return ListTile(
                                 title: Text(item['item_name']),
-                                subtitle: Text('\₹${item['price'].toStringAsFixed(2)}'),
+                                subtitle: Text('₹${item['price'].toStringAsFixed(2)}'),
                                 trailing: IconButton(
                                     icon: const Icon(Icons.add, color: Colors.green),
                                     onPressed: () => _addItemToPlate(item),
@@ -207,7 +207,7 @@ class _DesignPlateScreenState extends State<DesignPlateScreen> {
                                 final item = _selectedItems[index];
                                 return ListTile(
                                     title: Text(item['item_name']),
-                                    subtitle: Text('\₹${item['price'].toStringAsFixed(2)}'),
+                                    subtitle: Text('₹${item['price'].toStringAsFixed(2)}'),
                                     trailing: IconButton(
                                         icon: const Icon(Icons.remove, color: Colors.red),
                                         onPressed: () => _removeItemFromPlate(item),
@@ -225,7 +225,7 @@ class _DesignPlateScreenState extends State<DesignPlateScreen> {
     return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-            Text('Total: \₹${_totalPrice.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('Total: ₹${_totalPrice.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
             _isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton.icon(

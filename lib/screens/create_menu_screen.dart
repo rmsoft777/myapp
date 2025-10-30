@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreateMenuScreen extends StatefulWidget {
@@ -126,7 +125,7 @@ class _CreateMenuScreenState extends State<CreateMenuScreen> {
                 }
                 final categories = snapshot.data ?? [];
                 return DropdownButtonFormField<int>(
-                  value: _categoryId,
+                  initialValue: _categoryId,
                   hint: const Text('Select Category'),
                   items: categories.map((category) {
                     return DropdownMenuItem<int>(

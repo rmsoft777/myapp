@@ -36,6 +36,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           .from('orders')
           .update({'status': status})
           .eq('order_id', widget.orderId);
+      if (!mounted) return;
       setState(() {
         _orderDetailsFuture = _fetchOrderDetails();
       });
@@ -43,6 +44,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         SnackBar(content: Text('Order status updated to $status')),
       );
     } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating status: $error')),
       );
@@ -97,7 +99,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   return; // Or show an error
                 }
                 await _savePayment(amount, paymentStatus!);
-                Navigator.of(context).pop();
+                if(mounted) Navigator.of(context).pop();
               },
               child: const Text('Save Payment'),
             ),
@@ -125,7 +127,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         'entered_by': adminId,
         'remaining_balance': remainingBalance,
       });
-
+      if (!mounted) return;
       setState(() {
         _orderDetailsFuture = _fetchOrderDetails();
       });
@@ -134,6 +136,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         const SnackBar(content: Text('Payment saved successfully!')),
       );
     } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error saving payment: $error')),
       );
@@ -194,7 +197,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           _buildInfoRow('Phone', customer['phone'] ?? 'N/A'),
           _buildInfoRow('Address', order['address'] ?? 'N/A'),
           _buildInfoRow('Event Date', order['event_date'] ?? 'N/A'),
-          _buildInfoRow('Total Amount', '\₹${order['total_amount']?.toStringAsFixed(2) ?? '0.00'}'),
+          _buildInfoRow('Total Amount', '₹${order['total_amount']?.toStringAsFixed(2) ?? '0.00'}'),
         ]),
       ),
     );
@@ -230,7 +233,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         itemBuilder: (context, index) {
           final payment = payments[index];
           return ListTile(
-            title: Text('Amount: \₹${payment['paid_amount']?.toStringAsFixed(2) ?? '0.00'}'),
+            title: Text('Amount: ₹${payment['paid_amount']?.toStringAsFixed(2) ?? '0.00'}'),
             subtitle: Text('Status: ${payment['payment_status']}'),
             trailing: Text(payment['payment_date'] != null ? 'on ${payment['payment_date'].toString().substring(0,10)}' : ''),
           );
@@ -245,14 +248,14 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       children: [
         if (order['status'] == 'pending')
           ElevatedButton(
-            onPressed: () => _updateOrderStatus('accepted'),
             child: const Text('Accept Order'),
+            onPressed: () => _updateOrderStatus('accepted'),
             style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
           ),
         const SizedBox(height: 10),
         ElevatedButton(
-          onPressed: _showPaymentDialog,
           child: const Text('Enter Payment'),
+          onPressed: _showPaymentDialog,
           style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
         ),
       ],

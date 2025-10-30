@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddStaffScreen extends StatefulWidget {
@@ -128,7 +127,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _role,
+                initialValue: _role,
                 hint: const Text('Select Role'),
                 items: ['staff', 'admin'].map((String role) {
                   return DropdownMenuItem<String>(
